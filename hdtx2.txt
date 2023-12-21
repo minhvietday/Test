@@ -18,10 +18,10 @@ public ActionResult Index(string toLuong, string fromLuong)
             {
                 ViewBag.toLuong = toLuong;
                 ViewBag.fromLuong = fromLuong;
-                //iToLuong và iFromLuong. Trim() được sử dụng để loại bỏ các khoảng trắng ở đầu và cuối.
+ 
                 int iToLuong = int.Parse(toLuong.Trim());
                 int iFromLuong = int.Parse(fromLuong.Trim());
-                //Lọc dữ liệu từ bảng NhanVien trong cơ sở dữ liệu(db) với điều kiện mức lương(Luong) nằm trong khoảng đã chỉ định.
+
                 var nhanVienFilter = db.NhanVien.Where(nv => nv.Luong >= iToLuong && nv.Luong <= iFromLuong).ToList();
                 foreach (NhanVien nv in nhanVienFilter)
                 {
@@ -110,16 +110,15 @@ public ActionResult Create()
             {
                 if (ModelState.IsValid)
                 {
-                    // Nếu dữ liệu hợp lệ, thêm nhân viên vào cơ sở dữ liệu và lưu thay đổi.
+
                     db.NhanVien.Add(nhanVien);
                     db.SaveChanges();
                 }
-                // Sau khi thêm thành công, chuyển hướng người dùng về trang danh sách (Index).
+
                 return RedirectToAction("Index");
             }
             catch (Exception)
             {
-                // Nếu có lỗi xảy ra trong quá trình xử lý, hiển thị lại trang tạo mới với dữ liệu đã nhập.
                 return View(nhanVien);
             }
 
