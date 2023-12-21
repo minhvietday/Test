@@ -1,0 +1,544 @@
+De1
+Model đặt tên là DangMinhViet liên kết với bảng NhanVien:
+- DangMinhViet.cs
+- NhanVien.cs
+----- NhanViensController.cs
+- thêm vào đầu
+using De1.Models;
+using System.Data;
+using System.Data.Entity;
+using System.Net;
+private DangMinhViet db = new DangMinhViet();
+------------------------Index--------------------------------------------------
+//////////////// Get
+public ActionResult Index(string toLuong, string fromLuong)
+        {
+            int sum = 0;
+            if (!string.IsNullOrEmpty(toLuong) && !string.IsNullOrEmpty(fromLuong))
+            {
+                ViewBag.toLuong = toLuong;
+                ViewBag.fromLuong = fromLuong;
+                //iToLuong và iFromLuong. Trim() được sử dụng để loại bỏ các khoảng trắng ở đầu và cuối.
+                int iToLuong = int.Parse(toLuong.Trim());
+                int iFromLuong = int.Parse(fromLuong.Trim());
+                //Lọc dữ liệu từ bảng NhanVien trong cơ sở dữ liệu(db) với điều kiện mức lương(Luong) nằm trong khoảng đã chỉ định.
+                var nhanVienFilter = db.NhanVien.Where(nv => nv.Luong >= iToLuong && nv.Luong <= iFromLuong).ToList();
+                foreach (NhanVien nv in nhanVienFilter)
+                {
+                    sum += (int)nv.Luong;
+                }
+                ViewBag.Tong = sum;
+                return View(nhanVienFilter);
+            }
+            ViewBag.Tong = sum;
+            return View(db.NhanVien.ToList());
+        }
+//////////////// View Index
+@model IEnumerable<De1.Models.NhanVien>
+@{
+    ViewBag.Title = "Index";
+}
+
+<h2>Index</h2>
+<p>
+    @Html.ActionLink("Tạo mới", "Create")
+</p>
+
+@using (Html.BeginForm())
+{
+@Html.DisplayName("Nhập lương từ: ")
+                @Html.TextBox("toLuong", ViewBag.toLuong as string)
+                                @Html.DisplayName("Đến: ")
+                                                @Html.TextBox("fromLuong", ViewBag.fromLuong as string)
+                                                                <input type="submit" value="Tìm" />}
+
+<br />
+
+<table class="table">
+    <tr>
+        <th>
+            Họ tên
+        </th>
+        <th>
+            Phòng
+        </th>
+        <th>
+            Lương
+        </th>
+        <th></th>
+    </tr>
+
+    @foreach (var item in Model)
+    {
+<tr>
+    <td>
+        @Html.DisplayFor(modelItem => item.Hoten)
+    </td>
+    <td>
+        @Html.DisplayFor(modelItem => item.Phong)
+    </td>
+    <td>
+        @Html.DisplayFor(modelItem => item.Luong)
+    </td>
+    <td>
+        @Html.ActionLink("Sửa", "Edit", new { id = item.Manv.Trim() }) |
+        @Html.ActionLink("Chi tiết", "Details", new { id = item.Manv.Trim() }) |
+        @Html.ActionLink("Xóa", "Delete", new { id = item.Manv.Trim() })
+    </td>
+</tr>}
+
+</table>
+@if (ViewBag.Tong != 0)
+{
+<p style="color: red; font-size: 30px;">Tổng giá là: @ViewBag.Tong</p>}
+
+------------------------Create-------------------------------------------------
+//////////////// Get
+
+public ActionResult Create()
+        {
+            return View();
+        }
+
+//////////////// Post
+
+[HttpPost]
+        [ValidateAntiForgeryToken]
+        public ActionResult Create([Bind(Include = "Manv,Hoten,Phong,Luong")] NhanVien nhanVien)
+        {
+            try
+            {
+                if (ModelState.IsValid)
+                {
+                    // Nếu dữ liệu hợp lệ, thêm nhân viên vào cơ sở dữ liệu và lưu thay đổi.
+                    db.NhanVien.Add(nhanVien);
+                    db.SaveChanges();
+                }
+                // Sau khi thêm thành công, chuyển hướng người dùng về trang danh sách (Index).
+                return RedirectToAction("Index");
+            }
+            catch (Exception)
+            {
+                // Nếu có lỗi xảy ra trong quá trình xử lý, hiển thị lại trang tạo mới với dữ liệu đã nhập.
+                return View(nhanVien);
+            }
+
+        }
+
+//////////////// View Create gần giống với View Edit
+
+@model De1.Models.NhanVien
+
+@{ ViewBag.Title = "Create"; }
+
+<h2>Tạo</h2>
+
+
+@using (Html.BeginForm())
+{
+@Html.AntiForgeryToken()
+
+                <div class="form-horizontal">
+                    <h4>NhanVien</h4>
+                    <hr />
+                    @Html.ValidationSummary(true, "", new { @class = "text-danger" })
+                    <div class="form-group">
+                        @Html.LabelFor(model => model.Manv, htmlAttributes: new { @class = "control-label col-md-2" })
+                        <div class="col-md-10">
+                            @Html.EditorFor(model => model.Manv, new { htmlAttributes = new { @class = "form-control" } })
+                            @Html.ValidationMessageFor(model => model.Manv, "", new { @class = "text-danger" })
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        @Html.LabelFor(model => model.Hoten, htmlAttributes: new { @class = "control-label col-md-2" })
+                        <div class="col-md-10">
+                            @Html.EditorFor(model => model.Hoten, new { htmlAttributes = new { @class = "form-control" } })
+                            @Html.ValidationMessageFor(model => model.Hoten, "", new { @class = "text-danger" })
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        @Html.LabelFor(model => model.Phong, htmlAttributes: new { @class = "control-label col-md-2" })
+                        <div class="col-md-10">
+                            @Html.EditorFor(model => model.Phong, new { htmlAttributes = new { @class = "form-control" } })
+                            @Html.ValidationMessageFor(model => model.Phong, "", new { @class = "text-danger" })
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        @Html.LabelFor(model => model.Luong, htmlAttributes: new { @class = "control-label col-md-2" })
+                        <div class="col-md-10">
+                            @Html.EditorFor(model => model.Luong, new { htmlAttributes = new { @class = "form-control" } })
+                            @Html.ValidationMessageFor(model => model.Luong, "", new { @class = "text-danger" })
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <div class="col-md-offset-2 col-md-10">
+                            <input type="submit" value="Tạo" class="btn btn-default" />
+                        </div>
+                    </div>
+                </div>}
+
+<div>
+    @Html.ActionLink("Quay lại", "Index")
+</div>
+
+@section Scripts {
+    @Scripts.Render("~/bundles/jqueryval")
+}
+------------------------Edit-------------------------------------------------
+//////////////// Get Edit giống hệt Details, Delete
+
+public ActionResult Edit(string id)
+        {
+            if (id == null)
+            {
+                return new HttpStatusCodeResult(HttpStatusCode.BadRequest);
+            }
+            NhanVien nhanVien = db.NhanVien.Find(id);
+            if (nhanVien == null)
+            {
+                return HttpNotFound();
+            }
+            return View(nhanVien);
+        }
+//////////////// Post Edit
+[HttpPost]
+        [ValidateAntiForgeryToken]
+        public ActionResult Edit([Bind(Include = "Manv,Hoten,Phong,Luong")] NhanVien nhanVien)
+        {
+            if (ModelState.IsValid)
+            {
+                db.Entry(nhanVien).State = EntityState.Modified;
+                db.SaveChanges();
+                return RedirectToAction("Index");
+            }
+            return View(nhanVien);
+        }
+//////////////// View Edit gần giống View Create
+@model De1.Models.NhanVien
+@{
+    ViewBag.Title = "Edit";
+}
+
+<h2>Sửa</h2>
+
+
+@using (Html.BeginForm())
+{
+@Html.AntiForgeryToken()
+
+                <div class="form-horizontal">
+                    <h4>NhanVien</h4>
+                    <hr />
+                    @Html.ValidationSummary(true, "", new { @class = "text-danger" })
+                    @Html.HiddenFor(model => model.Manv)
+
+                    <div class="form-group">
+                        @Html.LabelFor(model => model.Hoten, htmlAttributes: new { @class = "control-label col-md-2" })
+                        <div class="col-md-10">
+                            @Html.EditorFor(model => model.Hoten, new { htmlAttributes = new { @class = "form-control" } })
+                            @Html.ValidationMessageFor(model => model.Hoten, "", new { @class = "text-danger" })
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        @Html.LabelFor(model => model.Phong, htmlAttributes: new { @class = "control-label col-md-2" })
+                        <div class="col-md-10">
+                            @Html.EditorFor(model => model.Phong, new { htmlAttributes = new { @class = "form-control" } })
+                            @Html.ValidationMessageFor(model => model.Phong, "", new { @class = "text-danger" })
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        @Html.LabelFor(model => model.Luong, htmlAttributes: new { @class = "control-label col-md-2" })
+                        <div class="col-md-10">
+                            @Html.EditorFor(model => model.Luong, new { htmlAttributes = new { @class = "form-control" } })
+                            @Html.ValidationMessageFor(model => model.Luong, "", new { @class = "text-danger" })
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <div class="col-md-offset-2 col-md-10">
+                            <input type="submit" value="Lưu" class="btn btn-default" />
+                        </div>
+                    </div>
+                </div>}
+
+<div>
+    @Html.ActionLink("Quay lại", "Index")
+</div>
+
+@section Scripts {
+    @Scripts.Render("~/bundles/jqueryval")
+}
+------------------------Details-------------------------------------------------
+//////////////// Get Details giống hệt Edit, Delete
+
+public ActionResult Details(string id)
+        {
+            if (id == null)
+            {
+                return new HttpStatusCodeResult(HttpStatusCode.BadRequest);
+            }
+            NhanVien nhanVien = db.NhanVien.Find(id);
+            if (nhanVien == null)
+            {
+                return HttpNotFound();
+            }
+            return View(nhanVien);
+        }
+/////////////// Details không có Post
+
+/////////////// View Details gần giống view Delete
+
+@model De1.Models.NhanVien
+
+@{ ViewBag.Title = "Details"; }
+
+<h2>Chi tiết</h2>
+
+<div>
+    <h4>NhanVien</h4>
+    <hr />
+    <dl class="dl-horizontal">
+        <dt>
+            @Html.DisplayNameFor(model => model.Hoten)
+        </dt>
+
+        <dd>
+            @Html.DisplayFor(model => model.Hoten)
+        </dd>
+
+        <dt>
+            @Html.DisplayNameFor(model => model.Phong)
+        </dt>
+
+        <dd>
+            @Html.DisplayFor(model => model.Phong)
+        </dd>
+
+        <dt>
+            @Html.DisplayNameFor(model => model.Luong)
+        </dt>
+
+        <dd>
+            @Html.DisplayFor(model => model.Luong)
+        </dd>
+
+    </dl>
+</div>
+<p>
+    @Html.ActionLink("Sửa", "Edit", new { id = Model.Manv.Trim() }) |
+    @Html.ActionLink("Quay lại", "Index")
+</p>
+
+------------------------Delete--------------------------------------------------
+//////////////// Get Delete giống hệt Details, Edit
+
+public ActionResult Delete(string id)
+        {
+            if (id == null)
+            {
+                return new HttpStatusCodeResult(HttpStatusCode.BadRequest);
+            }
+            NhanVien nhanVien = db.NhanVien.Find(id);
+            if (nhanVien == null)
+            {
+                return HttpNotFound();
+            }
+            return View(nhanVien);
+        }
+//////////////// Post Delete 
+
+[HttpPost, ActionName("Delete")]
+        [ValidateAntiForgeryToken]
+        public ActionResult DeleteConfirmed(string id)
+        {
+            NhanVien nhanVien = db.NhanVien.Find(id);
+            db.NhanVien.Remove(nhanVien);
+            db.SaveChanges();
+            return RedirectToAction("Index");
+        }
+
+//////////////// View Delete 
+
+@model De1.Models.NhanVien
+
+@{ ViewBag.Title = "Delete"; }
+
+<h2>Xóa</h2>
+
+<h3>Bạn có chắc muốn xóa không?</h3>
+<div>
+    <h4>NhanVien</h4>
+    <hr />
+    <dl class="dl-horizontal">
+        <dt>
+            @Html.DisplayNameFor(model => model.Hoten)
+        </dt>
+
+        <dd>
+            @Html.DisplayFor(model => model.Hoten)
+        </dd>
+
+        <dt>
+            @Html.DisplayNameFor(model => model.Phong)
+        </dt>
+
+        <dd>
+            @Html.DisplayFor(model => model.Phong)
+        </dd>
+
+        <dt>
+            @Html.DisplayNameFor(model => model.Luong)
+        </dt>
+
+        <dd>
+            @Html.DisplayFor(model => model.Luong)
+        </dd>
+
+    </dl>
+
+    @using (Html.BeginForm())
+    {
+@Html.AntiForgeryToken()
+
+                <div class="form-actions no-color">
+                    <input type="submit" value="Xóa" class="btn btn-default" /> |
+                    @Html.ActionLink("Quay lại", "Index")
+                </div>}
+</div>
+
+-----------Tạo mới Controller-Empty: Cau5Controller------------------------------------
+thêm : using De1.Models;
+
+ private DangMinhViet db = new DangMinhViet();
+        // GET: Cau5
+        public ActionResult Index()
+        {
+            return View();
+        }
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public ActionResult Create([Bind(Include = "Manv,Hoten,Phong,Luong")] NhanVien nhanVien)
+        {
+            try
+            {
+                // Kiểm tra nếu có trường nào không được nhập
+                if (string.IsNullOrEmpty(nhanVien.Manv) || string.IsNullOrEmpty(nhanVien.Hoten) || string.IsNullOrEmpty(nhanVien.Phong) || nhanVien.Luong == null)
+                {
+                    ViewBag.Error = "Vui lòng nhập đầy đủ thông tin cho tất cả các ô.";
+                    if (string.IsNullOrEmpty(nhanVien.Manv))
+                    {
+                        ModelState.AddModelError("Manv", "Vui lòng nhập Mã nhân viên.");
+                    }
+
+                    if (string.IsNullOrEmpty(nhanVien.Hoten))
+                    {
+                        ModelState.AddModelError("Hoten", "Vui lòng nhập Họ tên.");
+                    }
+
+                    if (string.IsNullOrEmpty(nhanVien.Phong))
+                    {
+                        ModelState.AddModelError("Phong", "Vui lòng nhập Tên phòng.");
+                    }
+
+                    if (nhanVien.Luong == null)
+                    {
+                        ModelState.AddModelError("Luong", "Vui lòng nhập Lương.");
+                    }
+
+                    // Kiểm tra xem Mã nhân viên đã tồn tại hay chưa
+                    if (db.NhanVien.Any(nv => nv.Manv == nhanVien.Manv))
+                    {
+                        ModelState.AddModelError("Manv", "Mã nhân viên đã tồn tại. Vui lòng chọn một Mã nhân viên khác.");
+                    }
+
+                    
+                    return View("Index", nhanVien);
+                }
+                if (ModelState.IsValid)
+                {
+                    db.NhanVien.Add(nhanVien);
+                    db.SaveChanges();
+
+                    ViewBag.Success = "Thêm thành công!";
+                    return RedirectToAction("../NhanViens/Index");
+                }
+
+
+
+                //return View("Index", nhanVien);
+                return RedirectToAction("../NhanViens/Index");
+            }
+            catch (Exception ex)
+            {
+                ViewBag.Error = "Có lỗi khi nhập dữ liệu ! | " + ex.Message;
+                return View("Index", nhanVien);
+            }
+        }
+---Index.cshtml của Cau5
+@model De1.Models.NhanVien
+@{ ViewBag.Title = "Index"; }
+
+<h2>Index</h2>
+
+@using (Html.BeginForm("Create", "Cau5", FormMethod.Post))
+{
+@Html.AntiForgeryToken()
+                @Html.ValidationSummary(true, "", new { @class = "text-danger" })
+                                <table border="1" style="border-collapse: collapse">
+                                    <caption>QUẢN LÝ NHÂN VIÊN</caption>
+                                    <tr>
+                                        <td>Mã nhân viên</td>
+                                        <td>
+                                            @Html.EditorFor(model => model.Manv, new { htmlAttributes = new { @class = "form-control" } })
+                                            @Html.ValidationMessageFor(model => model.Manv, "", new { @class = "text-danger" })
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>Họ tên: </td>
+                                        <td>
+                                            @Html.EditorFor(model => model.Hoten, new { htmlAttributes = new { @class = "form-control" } })
+                                            @Html.ValidationMessageFor(model => model.Hoten, "", new { @class = "text-danger" })
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>Tên phòng</td>
+                                        <td>
+                                            @Html.EditorFor(model => model.Phong, new { htmlAttributes = new { @class = "form-control" } })
+                                            @Html.ValidationMessageFor(model => model.Phong, "", new { @class = "text-danger" })
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>Lương</td>
+                                        <td>
+                                            @Html.EditorFor(model => model.Luong, new { htmlAttributes = new { @class = "form-control" } })
+                                            @Html.ValidationMessageFor(model => model.Luong, "", new { @class = "text-danger" })
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td colspan="2" align="center">
+                                            <input type="submit" value="Thêm" class="btn btn-default" />
+                                        </td>
+                                    </tr>
+                                </table>}
+<br />
+@Html.ActionLink("Quay lại", "Index", "NhanViens")
+
+@if (ViewBag.Error != null)
+{
+<br />
+                <div class="alert alert-danger" role="alert">@ViewBag.Error</div>}
+
+@if (ViewBag.Success != null)
+{
+<br />
+                <div class="alert alert-success" role="alert">@ViewBag.Success</div>}
+
+@section Scripts {
+    @Scripts.Render("~/bundles/jqueryval")
+}
