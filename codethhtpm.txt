@@ -1,0 +1,289 @@
+1. WEB API
+----------- code "thController.cs"
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Net;
+using System.Net.Http;
+using System.Web.Http;
+using _2020606033_DangMinhViet_Tao.Models;            ///
+
+namespace _2020606033_DangMinhViet_Tao.Controllers
+{
+    public class thController : ApiController
+    {
+        truonghocdbEntities db = new truonghocdbEntities();
+
+        [HttpGet]
+        [Route("api/th/danhsach")]
+        //Viết phương thức lấy ra tất cả các sinh vieenn trong bảng snhvien
+        public List<sinhvien> DanhsachSinhvien()
+        {
+            return db.sinhvien.ToList();
+        }
+        //Viết phương thức lấy ra mã sinh viên theo mã lớp
+        [HttpGet]
+        [Route("api/th/dstheolop")]
+        public List<sinhvien> Danhsachsinhvientheolop(int malop)
+        {
+            return db.sinhvien.Where(sv => sv.malop == malop).ToList();
+        }
+        //Viết phương thức tìm sinh viên mã sinh viên
+        [HttpGet]
+        [Route("api/th/timsv")]
+        public sinhvien Timsinhvien(int masv)
+        {
+            return db.sinhvien.SingleOrDefault(sv => sv.masv == masv);
+        }
+        //Viết phương thức thêm sinh viên
+        [HttpPost]
+        [Route("api/th/themsv")]
+        public bool Themsinhvien([FromBody] sinhvien s)
+        {
+            try
+            {
+                //db.sinhvien.InsertOnSubmit(s);
+                //db.SubmitChanges();
+                db.sinhvien.Add(s);
+                db.SaveChanges();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Co loi: " + ex.Message);
+                return false;
+            }
+        }
+        [HttpPut]
+        [Route("api/th/suasv")]
+        public bool Suasinhvien([FromBody] sinhvien s)
+        {
+            try
+            {
+                //db.sinhvien.InsertOnSubmit(s);
+                //db.SubmitChanges();
+                sinhvien sv = db.sinhvien.SingleOrDefault(x => x.masv == s.masv);
+                sv.hoten = s.hoten;
+                sv.diachi = s.diachi;
+                sv.dienthoai = s.dienthoai;
+                sv.anh = s.anh;
+                sv.malop = s.malop;
+                db.SaveChanges();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Co loi: " + ex.Message);
+                return false;
+            }
+        }
+        //Viết phương thức xóa sinh viên theo msv
+        [HttpDelete]
+        [Route("api/th/xoasv")]
+        public bool Xoasinhvien(int masv)
+        {
+            sinhvien sv = db.sinhvien.FirstOrDefault(x => x.masv == masv);
+            if(sv != null)
+            {
+                db.sinhvien.Remove(sv);
+                db.SaveChanges();
+                return true;
+            }
+            return false;
+        }
+        //Phương thức lấy danh sách lớp học
+        [HttpGet]
+        [Route("api/th/dslop")]
+        public List<lophoc> Danhsachlop()
+        {
+            return db.lophoc.ToList();
+        }
+    }
+}
+/////////////////////////////////////////////////////////////////////////////
+- code phần Global.asax
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Web;
+using System.Web.Http;
+using System.Web.Routing;
+
+namespace _2020606033_DangMinhViet_Tao
+{
+    public class WebApiApplication : System.Web.HttpApplication
+    {
+        protected void Application_Start()
+        {
+            GlobalConfiguration.Configure(WebApiConfig.Register);
+            GlobalConfiguration.Configuration.Formatters.JsonFormatter.SerializerSettings
+    .ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore;
+            GlobalConfiguration.Configuration.Formatters
+                .Remove(GlobalConfiguration.Configuration.Formatters.XmlFormatter);
+        }
+    }
+}
+//////////////////////////////////////////////////////////////////////////////////
+2. WINDOWS FORM
+------------ class Sinhvien.cs:
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace _2020606033_DangMinhViet_Goi
+{
+    public class Sinhvien
+    {
+        public int masv { get; set; }
+        public string hoten { get; set; }
+        public string diachi { get; set; }
+        public string dienthoai { get; set; }
+        public int malop { get; set; }
+        public string anh { get; set; }
+        public Sinhvien()
+        {
+
+        }
+
+        public Sinhvien(int masv, string hoten, string diachi, string dienthoai, int malop, string anh)
+        {
+            this.masv = masv;
+            this.hoten = hoten;
+            this.diachi = diachi;
+            this.dienthoai = dienthoai;
+            this.malop = malop;
+            this.anh = anh;
+        }
+    }
+}
+----------Form
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
+using System.Drawing;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows.Forms;
+using System.Net;
+using System.IO;
+using System.Runtime.Serialization.Json;
+using System.Collections.Specialized;
+
+namespace _2020606033_DangMinhViet_Goi
+{
+    public partial class Form1 : Form
+    {
+        public Form1()
+        {
+            InitializeComponent();
+        }
+
+        private void Form1_Load(object sender, EventArgs e)
+        {
+            Hienthi();
+        }
+        private void Hienthi()
+        {
+            string link = "http://localhost/data/api/th/danhsach";
+            HttpWebRequest req = HttpWebRequest.CreateHttp(link);
+            WebResponse res = req.GetResponse();
+            DataContractJsonSerializer js = new DataContractJsonSerializer(typeof(Sinhvien[]));
+            object data = js.ReadObject(res.GetResponseStream());
+            Sinhvien[] danhsach = (Sinhvien[])data;
+            dataGridView1.DataSource = danhsach;
+        }
+
+        private void btnXemds_Click(object sender, EventArgs e)
+        {
+            Hienthi();
+        }
+
+        private void btnKetthuc_Click(object sender, EventArgs e)
+        {
+            Application.Exit();
+        }
+
+        private void dataGridView1_CellMouseClick(object sender, DataGridViewCellMouseEventArgs e)
+        {
+            int d = e.RowIndex;
+            textBox1.Text = dataGridView1.Rows[d].Cells[0].Value.ToString();
+            txthoten.Text = dataGridView1.Rows[d].Cells[1].Value.ToString();
+            txtdiachi.Text = dataGridView1.Rows[d].Cells[2].Value.ToString();
+            txtdienthoai.Text = dataGridView1.Rows[d].Cells[3].Value.ToString();
+            txtmalop.Text = dataGridView1.Rows[d].Cells[4].Value.ToString();
+            txtanh.Text = dataGridView1.Rows[d].Cells[5].Value.ToString();
+        }
+
+        private void btnTim_Click(object sender, EventArgs e)
+        {
+            string masv = string.Format("?masv={0}", textBox1.Text);                         //
+            string link = "http://localhost/data/api/th/timsv"+masv;                         //
+            HttpWebRequest req = HttpWebRequest.CreateHttp(link);
+            WebResponse res = req.GetResponse();
+            DataContractJsonSerializer js = new DataContractJsonSerializer(typeof(Sinhvien)); //
+            object data = js.ReadObject(res.GetResponseStream());
+            Sinhvien sv = (Sinhvien)data;                                                     //
+            if(sv != null)                                                                    //
+            {
+                txthoten.Text = sv.hoten;
+                txtdiachi.Text = sv.diachi;
+                txtdienthoai.Text = sv.dienthoai;
+                txtmalop.Text = sv.malop.ToString();
+                txtanh.Text = sv.anh;
+            }
+            else
+            {
+                MessageBox.Show("Không có sv có mã " + textBox1.Text, "Thông báo");
+            }
+        }
+
+        private void btnThem_Click(object sender, EventArgs e)
+        {
+            string url = "http://localhost/data/api/th/themsv";
+            var client = new WebClient();
+            var sv = new NameValueCollection();
+            sv["hoten"] = txthoten.Text;
+            sv["diachi"] = txtdiachi.Text;
+            sv["dienthoai"] = txtdienthoai.Text;
+            sv["malop"] = txtmalop.Text;
+            sv["anh"] = txtanh.Text;
+            var response = client.UploadValues(url, sv);
+            //string msg = Encoding.UTF8.GetString(response);
+            //MessageBox.Show("Kết quả thêm: " + msg);
+            Hienthi();
+        }
+
+        private void btnSua_Click(object sender, EventArgs e)
+        {
+            string url = "http://localhost/data/api/th/suasv"; //
+            var client = new WebClient();
+            var sv = new NameValueCollection();
+            sv["hoten"] = txthoten.Text;
+            sv["diachi"] = txtdiachi.Text;
+            sv["dienthoai"] = txtdienthoai.Text;
+            sv["malop"] = txtmalop.Text;
+            sv["anh"] = txtanh.Text;
+            sv["masv"] = textBox1.Text;                       //
+            var response = client.UploadValues(url,"PUT", sv);//
+            //string msg = Encoding.UTF8.GetString(response);
+            //MessageBox.Show("Kết quả thêm: " + msg);
+            Hienthi();
+        }
+
+        private void btnXoa_Click(object sender, EventArgs e)
+        {
+            string masv = string.Format("?masv={0}", textBox1.Text);
+            string url = "http://localhost/data/api/th/xoasv" + masv;
+            WebRequest req = WebRequest.CreateHttp(url);
+            req.Method = "DELETE";
+            HttpWebResponse res = (HttpWebResponse)req.GetResponse();
+            Hienthi();
+        }
+    }
+}
+
+

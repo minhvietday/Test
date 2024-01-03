@@ -1,0 +1,172 @@
+-  Model kết nối tới các bảng trong QLNV.sql bằng EF code first tên là ModelDB
+-  Tạo controller sd bảng NhanVien đặt tên là NhanVienController
+- _Layout.cshtml:
+<div>
+        <center>
+            @Html.ActionLink("Xem danh sách ", "Index", "NhanVien")
+            @{Html.RenderAction("CategoryMenu", "NhanVien");}
+            @{ if (Session["ma"] == null)
+                {
+                    <a href="/NhanVien/Login">Login</a>
+                }
+                else
+                {
+                    <label> Chúc mừng bạn &nbsp;</label><b>@Session["ma"]</b><label>&nbsp;|&nbsp;</label>
+                    <a href="/NhanVien/Logout">Logout</a>
+                }
+            }
+        </center>
+</div>
+- RouteConfig
+public class RouteConfig
+{
+        public static void RegisterRoutes(RouteCollection routes)
+        {
+            routes.IgnoreRoute("{resource}.axd/{*pathInfo}");
+            routes.MapMvcAttributeRoutes();      
+            routes.MapRoute(
+                name: "Default",
+                url: "{controller}/{action}/{id}",
+                defaults: new { controller = "NhanVien", action = "Index", id = UrlParameter.Optional }
+            );
+        }
+}
+- Code NhanVienController
+thêm using Pro_Ontap.Models;
+///////////Tại NhanVienController, sửa phần [HttpPost] của Create (xóa phần này)
+[HttpPost]
+        public ActionResult Create(NhanVien nv)
+        {
+            try
+            {
+                db.NhanVien.Add(nv);
+                db.SaveChanges();
+                return Json(new { result = true, JsonRequestBehavior.AllowGet });
+            }catch(Exception ex)
+            {
+                return Json(new { result = false, error = ex.Message });
+            }
+        }
+//////////Create.cshtml
+<div class="form-group">
+            <div class="col-md-offset-2 col-md-10">
+                @*<input type="submit" value="Create" class="btn btn-default" />*@
+                <input type="button" name="submitButton" id="btnSave" value="Save" />
+            </div>
+        </div>
+    </div>
+}
+
+<div>
+    @Html.ActionLink("Back to List", "Index")
+</div>
+
+@*Thêm id msg để thông báo việc thêm dữ liệu có thành công hay không *@
+<div id="msg" style="color:red"> </div>
+
+@section Scripts {
+    <script type="text/javascript">
+        $(function () {
+            $("#btnSave").click(function () {
+                var nv = {};
+                @*Tạo các thuộc tính và gán giá trị. Tên các thuộc tính này phải trùng với tên các thuộc tính của lớp NhanVien*@
+                nv.Hoten = $("#Hoten").val();
+                nv.Matkhau = $("#Matkhau").val();
+                nv.Tuoi = $("#Tuoi").val();
+                nv.Diachi = $("#Diachi").val();
+                nv.Luong = $("#Luong").val();
+                nv.Maphong = $("#Maphong").val();
+                $.ajax({
+                    type: "POST",
+                    url: '@Url.Action("/Create")',
+                    data: '{nv: ' + JSON.stringify(nv) + '}',
+                    dataType: "json",
+                    contentType: "application/json; charset=utf-8",
+                    success: function (response) {
+                        if (response.result == true) {
+                            $("#msg").html('Thêm thành công!');
+                        }
+                        else {
+                            $("#msg").html('Thêm thất bại!');;
+                        }
+                    },
+                });
+                return false;
+            });
+        });
+    </script>
+}
+
+4.     Hiển thị tên phòng (Menu)
+Ở File NhanVienController
+
+public ActionResult CategoryMenu()
+        {
+            var li = db.Phong.ToList();
+            return PartialView(li);
+        }
+
+------Tạo PartialView dc CategoryMenu.cshtml:
+@model IEnumerable<Pro_Ontap.Models.Phong>
+@*Hiển thị link các phòng ban trên Menu*@
+@foreach (var item in Model)
+{
+    var url = "/NhanVienTheoPhong/" + item.Maphong;  //
+    <a href="@url">@item.Tenphong</a> <label>&nbsp;|&nbsp;</label>
+}
+5.     Click
+///////NhanVienController
+//Tạo ACtionResult HienThiTheoPhong
+        [Route("NhanVienTheoPhong/{MaPhong}")]
+        public ActionResult HienThiTheoPhong(int MaPhong)
+        {
+            var li = db.NhanVien.Where(e => e.Maphong == MaPhong).ToList();
+            return View(li);
+        }
+////View chọn Use a layout page: và chọn Template:List, Model class: NhanVien, Data: ModelDB
+////
+6. Login, Logout
+/////////
+public ActionResult Login()
+        {
+            return View();
+        }
+        [HttpPost]
+        public ActionResult Login(string ma, string password)
+        {
+            var user = db.NhanVien.Where(n => n.Manv.ToString() == ma && n.Matkhau == password).FirstOrDefault();
+            if (user == null)
+            {
+                ViewBag.errLogin = "Sai mã hoặc mật khẩu";
+                return View("Login");
+            }
+            else
+            {
+                Session["ma"] = ma;
+                return RedirectToAction("Index", "NhanVien"); //chạy tới action Index
+            }
+        }
+////////////
+        public ActionResult Logout()
+        {
+            Session["ma"] = null;
+            return RedirectToAction("Index", "NhanVien");
+        }
+/////////View Login
+
+@{
+    ViewBag.Title = "Login";
+}
+
+<h2>Login</h2>
+<div class="login">
+    <div class="input">
+        @using (Html.BeginForm())
+        {
+            <p><label>Mã nhân viên:</label><input type="text" name="ma" /></p><br />
+            <p><label>Mật khẩu:</label><input type="text" name="password" /></p><br />
+            <p><input class="lg" type="submit" value="Login" /></p>
+        }
+    </div>
+    @ViewBag.errLogin
+</div>
